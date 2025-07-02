@@ -72,6 +72,18 @@ def update_task(task_id):
 @task_bp.route('/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     task = Tasks.query.get_or_404(task_id)
+    task_users = TaskUsers.query.filter_by(task_id=task_id).all()
+
+
+    # Delete all task-user links
+    for task_user in task_users:
+        db.session.delete(task_user)
+
+    # Delete all attachments related to the task
+    attachments = TaskAttachments.query.filter_by(task_id=task_id).all()
+    for attachment in attachments:
+        db.session.delete(attachment)
+
     db.session.delete(task)
     db.session.commit()
     return jsonify({'message': 'Task deleted successfully!'}), 200
