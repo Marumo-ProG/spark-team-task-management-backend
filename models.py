@@ -59,7 +59,6 @@ class Tasks(db.Model):
         db.session.add(self)
         db.session.commit()
 
-
 class TaskAttachments(db.Model):
     __tablename__ = 'task_attachments'
 
