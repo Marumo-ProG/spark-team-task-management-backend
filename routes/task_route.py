@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import Tasks, TaskAttachments, TaskUsers
 from config import db
+from datetime import datetime
 
 task_bp = Blueprint('tasks', __name__)
 
@@ -13,8 +14,17 @@ def create_task():
         user_id=data.get('user_id'),
         priority=data.get('priority'),
         status=data.get('status'),
-        due_date=data.get('due_date')
+        due_date=datetime.strptime(data.get("due_date"), '%Y-%m-%d').date()
     )
+    assigned_to = data.get('assigned_to', [])
+    if assigned_to:
+        for user_id in assigned_to:
+            task_user = TaskUsers(
+                task_id=new_task.id,
+                user_id=user_id
+            )
+            task_user.save()
+
     new_task.save()
     return jsonify({'message': 'Task created successfully!'}), 201
 
@@ -32,8 +42,31 @@ def update_task(task_id):
     task.user_id = data.get('user_id', task.user_id)
     task.priority = data.get('priority', task.priority)
     task.status = data.get('status', task.status)
-    task.due_date = data.get('due_date', task.due_date)
+    task.due_date = due_date=datetime.strptime(data.get("due_date"), '%Y-%m-%d').date() if data.get("due_date") else task.due_date
     task.save()
+
+
+    assigned_to = data.get('assigned_to', [])  # e.g. [2, 3, 4]
+
+    # Get existing task-user links for this task
+    task_users = TaskUsers.query.filter_by(task_id=task.id).all()
+    current_user_ids = {tu.user_id for tu in task_users}
+
+    # Add new users not already assigned
+    for user_id in assigned_to:
+        if user_id not in current_user_ids:
+            new_task_user = TaskUsers(task_id=task.id, user_id=user_id)
+            db.session.add(new_task_user)
+
+    # Remove users that are no longer assigned
+    for task_user in task_users:
+        if task_user.user_id not in assigned_to:
+            db.session.delete(task_user)
+
+    db.session.commit()
+
+
+
     return jsonify({'message': 'Task updated successfully!'}), 200
 
 @task_bp.route('/tasks/<int:task_id>', methods=['DELETE'])

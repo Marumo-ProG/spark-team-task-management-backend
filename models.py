@@ -38,7 +38,7 @@ class Tasks(db.Model):
     # author = db.relationship('User', backref=db.backref('tasks', lazy=True))
     priority = db.Column(db.String(50), nullable=True, default='low')
     status = db.Column(db.String(50), nullable=True, default='todo')
-    due_date = db.Column(db.DateTime, nullable=True)
+    due_date = db.Column(db.Date, nullable=True)
 
     def to_dict(self):
         return {
@@ -52,7 +52,7 @@ class Tasks(db.Model):
             'status': self.status,
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'attachments': [attachment.to_dict() for attachment in self.attachments] if hasattr(self, 'attachments') else [],
-            'users': [task_user.to_dict() for task_user in self.task_users] if hasattr(self, 'task_users') else []
+            'assigned_to': [tu.to_dict()["user_id"] for tu in TaskUsers.query.filter_by(task_id=self.id).all()]
         }
 
     def save(self):
