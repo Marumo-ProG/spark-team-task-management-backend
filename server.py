@@ -19,7 +19,7 @@ def index():
 # allowing the server to handle serving static files 
 @app.route('/assets/<path:filename>')
 def serve_static(filename):
-    import os
+  
     from flask import send_from_directory
     assets_folder = os.path.join(os.getcwd(), 'assets')
     return send_from_directory(assets_folder, filename)
